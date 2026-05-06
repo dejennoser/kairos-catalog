@@ -41,7 +41,7 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public List<ProductResponse> searchByName(@NonNull String name) {
-        return productRepository.findByNameContainingIgnoresCase(name)
+        return productRepository.findByNameContainingIgnoreCase(name)
                 .stream()
                 .map(this::toResponse)
                 .toList();
