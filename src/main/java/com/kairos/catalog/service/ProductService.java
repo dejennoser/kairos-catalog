@@ -2,6 +2,7 @@ package com.kairos.catalog.service;
 
 import com.kairos.catalog.dto.ProductRequest;
 import com.kairos.catalog.dto.ProductResponse;
+import com.kairos.catalog.exception.ProductNotFoundException;
 import com.kairos.catalog.repository.ProductRepository;
 import org.jspecify.annotations.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class ProductService {
     public ProductResponse findById(@NonNull UUID id) {
         return productRepository.findById(id)
                 .map(this::toResponse)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+                .orElseThrow(() -> new ProductNotFoundException(id));
     }
     @Transactional(readOnly = true)
     public List<ProductResponse> findByCategory(@NonNull String category) {
@@ -63,7 +64,7 @@ public class ProductService {
     @Transactional
     public ProductResponse update(@NonNull UUID id, @NonNull ProductRequest request) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+                .orElseThrow(() -> new ProductNotFoundException(id));
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
@@ -76,7 +77,7 @@ public class ProductService {
 @Transactional
     public void delete(@NonNull UUID id) {
         if (!productRepository.existsById(id)) {
-            throw new RuntimeException(("Product not found with id: " + id));
+            throw new ProductNotFoundException(id);
         }
         productRepository.deleteById(id);
 }
