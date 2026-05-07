@@ -46,6 +46,10 @@ public class Product {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Nullable
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @PrePersist
 protected  void onCreate() {
     createdAt = LocalDateTime.now();

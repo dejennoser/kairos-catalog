@@ -34,6 +34,9 @@ public class ProductResponse {
     private Integer stock;
 
     @NonNull
+    private String imageUrl;
+
+    @NonNull
     private LocalDateTime createdAt;
 
     @NonNull

@@ -37,3 +37,9 @@ server:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+  minio:
+    url: http://localhost:9000
+    access-key: kairos
+    secret-key: kairos123
+    bucket: kairos-products

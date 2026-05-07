@@ -11,8 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -54,6 +54,17 @@ public class ProductController {
     public ResponseEntity<ProductResponse> create(@RequestBody @Valid ProductRequest request){
         return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(request));
     }
+
+
+    @PostMapping("/{id}/image")
+    @Operation(summary = "Upload product image")
+    public ResponseEntity<ProductResponse> uploadImage(
+            @PathVariable @NonNull UUID id,
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(productService.uploadImage(id, file));
+    }
+
+
 
     @PutMapping("/{id}")
     @Operation(summary = "Update an existing product")
