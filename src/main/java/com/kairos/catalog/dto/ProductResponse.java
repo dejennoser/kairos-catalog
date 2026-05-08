@@ -33,7 +33,7 @@ public class ProductResponse {
     @NonNull
     private Integer stock;
 
-    @NonNull
+    @Nullable
     private String imageUrl;
 
     @NonNull
