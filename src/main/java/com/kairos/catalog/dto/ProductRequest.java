@@ -37,7 +37,6 @@ public class ProductRequest {
     @Min(value = 0, message = "error.validation.stock.invalid")
     private Integer stock;
 
-
     private java.util.Map<String, TranslationRequest> translations;
 
     @Getter

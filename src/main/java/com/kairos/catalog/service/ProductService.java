@@ -128,12 +128,17 @@ public List<ProductResponse> fuzzySearch(@NonNull String query, @NonNull String 
                 .toList();
 }
 
-    private ProductResponse toResponse(
+
+private ProductResponse toResponse(
             @NonNull Product product,
             @NonNull String locale) {
-        ProductTranslation translation = translationRepository
-                .findByProductIdAndLocale(product.getId(), locale)
-                .orElse(null);
+
+        ProductTranslation translation =
+                translationRepository.findByProductIdAndLocale(product.getId(), locale)
+                        .orElseGet(() ->
+                                translationRepository.findByProductIdAndLocale(product.getId(), "en")
+                                        .orElse(null)
+                        );
 
         return ProductResponse.builder()
                 .id(product.getId())
@@ -149,4 +154,5 @@ public List<ProductResponse> fuzzySearch(@NonNull String query, @NonNull String 
                 .updatedAt(product.getUpdatedAt())
                 .build();
     }
+
 }
