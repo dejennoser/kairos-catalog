@@ -1,6 +1,5 @@
 package com.kairos.catalog.controller;
 
-
 import com.kairos.catalog.dto.ProductRequest;
 import com.kairos.catalog.dto.ProductResponse;
 import com.kairos.catalog.service.ProductService;
@@ -16,6 +15,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @RestController
@@ -27,33 +31,45 @@ public class ProductController {
 
     @GetMapping
     @Operation(summary = "Get all products")
-    public ResponseEntity<List<ProductResponse>> findAll() {
-        return ResponseEntity.ok(productService.findAll());
+    public ResponseEntity<List<ProductResponse>> findAll(Locale locale) {
+        return ResponseEntity.ok(productService.findAll(locale.getLanguage()));
 
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a product by ID")
-    public ResponseEntity<ProductResponse> findById(@PathVariable @NonNull UUID id){
-        return ResponseEntity.ok(productService.findById(id));
+    public ResponseEntity<ProductResponse> findById(
+            @PathVariable @NonNull UUID id, Locale locale){
+        return ResponseEntity.ok(productService.findById(id,locale.getLanguage() ));
     }
 
     @GetMapping("/category/{category}")
     @Operation(summary = "Get a product by category")
-    public ResponseEntity<List<ProductResponse>> findByCategory(@PathVariable @NonNull String category){
-        return ResponseEntity.ok(productService.findByCategory(category));
+    public ResponseEntity<List<ProductResponse>> findByCategory(
+            @PathVariable @NonNull String category, Locale locale){
+        return ResponseEntity.ok(productService.findByCategory(category, locale.getLanguage()));
     }
 
     @GetMapping("/search")
     @Operation(summary = "Get a product by name")
-    public ResponseEntity<List<ProductResponse>> search(@RequestParam @NonNull String name){
-        return ResponseEntity.ok(productService.searchByName(name));
+    public ResponseEntity<List<ProductResponse>> search(
+            @RequestParam @NonNull String name, Locale locale){
+        return ResponseEntity.ok(productService.searchByName(name,locale.getLanguage()));
+    }
+
+    @GetMapping("/fuzzy-search")
+    @Operation(summary = "Fuzzy search products by name, description or category")
+    public ResponseEntity<List<ProductResponse>> fuzzySearch(
+            @RequestParam @NonNull String query, Locale locale) {
+        return ResponseEntity.ok(productService.fuzzySearch(query, locale.getLanguage()));
     }
 
     @PostMapping
     @Operation(summary = "Create a new product")
-    public ResponseEntity<ProductResponse> create(@RequestBody @Valid ProductRequest request){
-        return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(request));
+    public ResponseEntity<ProductResponse> create(
+            @RequestBody @Valid ProductRequest request, Locale locale) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(productService.create(request, locale.getLanguage()));
     }
 
 
@@ -61,8 +77,9 @@ public class ProductController {
     @Operation(summary = "Upload product image")
     public ResponseEntity<ProductResponse> uploadImage(
             @PathVariable @NonNull UUID id,
-            @RequestPart("file") MultipartFile file) {
-        return ResponseEntity.ok(productService.uploadImage(id, file));
+            @RequestPart("file") MultipartFile file,
+            Locale locale) {
+        return ResponseEntity.ok(productService.uploadImage(id, file, locale.getLanguage()));
     }
 
 
@@ -72,8 +89,9 @@ public class ProductController {
 
     public ResponseEntity<ProductResponse> update(
             @PathVariable @NonNull UUID id,
-            @RequestBody @Valid ProductRequest request) {
-        return  ResponseEntity.ok(productService.update(id, request));
+            @RequestBody @Valid ProductRequest request,
+            Locale locale) {
+        return  ResponseEntity.ok(productService.update(id, request, locale.getLanguage()));
     }
 
     @DeleteMapping("/{id}")

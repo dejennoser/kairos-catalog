@@ -33,4 +33,5 @@ public class MessageConfig {
         resolver.setDefaultLocale(Locale.ENGLISH);
         return resolver;
     }
+
 }

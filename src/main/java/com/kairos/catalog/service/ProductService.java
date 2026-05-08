@@ -2,8 +2,10 @@ package com.kairos.catalog.service;
 
 import com.kairos.catalog.dto.ProductRequest;
 import com.kairos.catalog.dto.ProductResponse;
+import com.kairos.catalog.entity.ProductTranslation;
 import com.kairos.catalog.exception.ProductNotFoundException;
 import com.kairos.catalog.repository.ProductRepository;
+import com.kairos.catalog.repository.ProductTranslationRepository;
 import org.jspecify.annotations.NonNull;
 import lombok.RequiredArgsConstructor;
 import com.kairos.catalog.entity.Product;
@@ -17,41 +19,44 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class ProductService {
+
     private final ProductRepository productRepository;
     private final MinioService minioService;
+    private final OpenSearchService openSearchService;
+    private final ProductTranslationRepository translationRepository;
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> findAll() {
+    public List<ProductResponse> findAll(String language) {
         return  productRepository.findAll()
                 .stream()
-                .map(this::toResponse)
+                .map(p -> toResponse(p, language))
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public ProductResponse findById(@NonNull UUID id) {
+    public ProductResponse findById(@NonNull UUID id, @NonNull String locale) {
         return productRepository.findById(id)
-                .map(this::toResponse)
+                .map(p -> toResponse(p, locale))
                 .orElseThrow(() -> new ProductNotFoundException(id));
     }
     @Transactional(readOnly = true)
-    public List<ProductResponse> findByCategory(@NonNull String category) {
+    public List<ProductResponse> findByCategory(@NonNull String category,@NonNull String locale ) {
         return productRepository.findByCategory(category)
                 .stream()
-                .map(this::toResponse)
+                .map(p -> toResponse(p, locale))
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> searchByName(@NonNull String name) {
+    public List<ProductResponse> searchByName(@NonNull String name,@NonNull String locale ) {
         return productRepository.findByNameContainingIgnoreCase(name)
                 .stream()
-                .map(this::toResponse)
+                .map(p -> toResponse(p, locale))
                 .toList();
     }
 
     @Transactional
-    public ProductResponse create(@NonNull ProductRequest request) {
+    public ProductResponse create(@NonNull ProductRequest request, @NonNull String locale) {
         Product product = Product.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -60,12 +65,24 @@ public class ProductService {
                 .stock(request.getStock())
                 .imageUrl(null)
                 .build();
-
-        return toResponse(productRepository.save(product));
+        Product saved = productRepository.save(product);
+        if (request.getTranslations() != null) {
+            request.getTranslations().forEach((lang, translation) -> {
+                ProductTranslation pt = ProductTranslation.builder()
+                        .product(saved)
+                        .locale(lang)
+                        .name(translation.getName())
+                        .description(translation.getDescription())
+                        .build();
+                translationRepository.save(pt);
+            });
+        }
+        openSearchService.indexProduct(saved);
+        return toResponse(saved, locale);
     }
 
     @Transactional
-    public ProductResponse update(@NonNull UUID id, @NonNull ProductRequest request) {
+    public ProductResponse update(@NonNull UUID id, @NonNull ProductRequest request, @NonNull String locale) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
         product.setName(request.getName());
@@ -74,11 +91,11 @@ public class ProductService {
         product.setCategory(request.getCategory());
         product.setStock(request.getStock());
 
-        return toResponse(productRepository.save(product));
+        return toResponse(productRepository.save(product), locale);
     }
 
 @Transactional
-public ProductResponse uploadImage(@NonNull UUID id, @NonNull MultipartFile file) {
+public ProductResponse uploadImage(@NonNull UUID id, @NonNull MultipartFile file, @NonNull String locale) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
         if(product.getImageUrl() != null) {
@@ -87,8 +104,7 @@ public ProductResponse uploadImage(@NonNull UUID id, @NonNull MultipartFile file
 
         String imageUrl = minioService.uploadImage(file);
         product.setImageUrl(imageUrl);
-
-        return  toResponse(productRepository.save(product));
+        return  toResponse(productRepository.save(product),locale);
 
 }
 
@@ -98,9 +114,27 @@ public ProductResponse uploadImage(@NonNull UUID id, @NonNull MultipartFile file
             throw new ProductNotFoundException(id);
         }
         productRepository.deleteById(id);
+        openSearchService.deleteProduct(id);
 }
 
-private  ProductResponse toResponse(@NonNull Product product) {
+@Transactional(readOnly = true)
+public List<ProductResponse> fuzzySearch(@NonNull String query, @NonNull String locale) {
+        List<UUID> ids = openSearchService.fuzzySearch(query);
+        return ids.stream()
+                .map(productRepository::findById)
+                .filter(java.util.Optional::isPresent)
+                .map(java.util.Optional::get)
+                .map(p -> toResponse(p, locale))
+                .toList();
+}
+
+    private ProductResponse toResponse(
+            @NonNull Product product,
+            @NonNull String locale) {
+        ProductTranslation translation = translationRepository
+                .findByProductIdAndLocale(product.getId(), locale)
+                .orElse(null);
+
         return ProductResponse.builder()
                 .id(product.getId())
                 .name(product.getName())
@@ -109,8 +143,10 @@ private  ProductResponse toResponse(@NonNull Product product) {
                 .category(product.getCategory())
                 .stock(product.getStock())
                 .imageUrl(product.getImageUrl())
+                .translatedName(translation != null ? translation.getName() : null)
+                .translatedDescription(translation != null ? translation.getDescription() : null)
                 .createdAt(product.getCreatedAt())
                 .updatedAt(product.getUpdatedAt())
                 .build();
-}
+    }
 }

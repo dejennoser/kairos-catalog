@@ -36,6 +36,12 @@ public class ProductResponse {
     @Nullable
     private String imageUrl;
 
+    @Nullable
+    private String translatedName;
+
+    @Nullable
+    private String translatedDescription;
+
     @NonNull
     private LocalDateTime createdAt;
 

@@ -50,6 +50,9 @@ public class Product {
     @Column(name = "image_url")
     private String imageUrl;
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<ProductTranslation> translations = new java.util.ArrayList<>();
+
     @PrePersist
 protected  void onCreate() {
     createdAt = LocalDateTime.now();

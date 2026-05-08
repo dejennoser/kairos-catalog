@@ -43,3 +43,7 @@ minio:
   access-key: kairos
   secret-key: kairos123
   bucket: kairos-products
+opensearch:
+  host: localhost
+  port: 9200
+  index: products
