@@ -22,14 +22,14 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ allow Swagger
+                        // allow Swagger
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
 
-                        // ✅ protect API
+                        // protect API
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/products/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/v1/products/**").authenticated()
@@ -37,7 +37,7 @@ public class SecurityConfig {
 
                         .anyRequest().permitAll()
                 )
-                // ✅ VERY IMPORTANT → enable JWT validation
+                // VERY IMPORTANT → enable JWT validation
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwt -> {})
                 );

@@ -25,7 +25,7 @@ public class ProductService {
     private final MinioService minioService;
     private final OpenSearchService openSearchService;
 
-    // ✅ GET ALL
+    // GET ALL
     @Transactional(readOnly = true)
     public List<ProductResponse> findAll(String locale) {
         return productRepository.findAll()
@@ -34,7 +34,7 @@ public class ProductService {
                 .toList();
     }
 
-    // ✅ GET BY ID
+    //  GET BY ID
     @Transactional(readOnly = true)
     public ProductResponse findById(@NonNull UUID id, @NonNull String locale) {
         return productRepository.findById(id)
@@ -42,7 +42,7 @@ public class ProductService {
                 .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
-    // ✅ GET BY CATEGORY
+    //  GET BY CATEGORY
     @Transactional(readOnly = true)
     public List<ProductResponse> findByCategory(@NonNull String category, @NonNull String locale) {
         return productRepository.findByCategory(category)
@@ -51,7 +51,7 @@ public class ProductService {
                 .toList();
     }
 
-    // ✅ SEARCH BY NAME
+    // SEARCH BY NAME
     @Transactional(readOnly = true)
     public List<ProductResponse> searchByName(@NonNull String name, @NonNull String locale) {
         return productRepository.findByNameContainingIgnoreCase(name)
@@ -60,7 +60,7 @@ public class ProductService {
                 .toList();
     }
 
-    // ✅ CREATE PRODUCT
+    // CREATE PRODUCT
     @Transactional
     public ProductResponse create(@NonNull ProductRequest request, @NonNull String locale) {
 
@@ -75,12 +75,12 @@ public class ProductService {
 
         Product saved = productRepository.save(product);
 
-        // ✅ save translations
+        //  save translations
         if (request.getTranslations() != null) {
             request.getTranslations().forEach((lang, translation) -> {
                 ProductTranslation pt = ProductTranslation.builder()
                         .product(saved)
-                        .locale(lang.toLowerCase()) // ✅ normalize
+                        .locale(lang.toLowerCase()) //  normalize
                         .name(translation.getName())
                         .description(translation.getDescription())
                         .build();
@@ -88,13 +88,13 @@ public class ProductService {
             });
         }
 
-        // ✅ index in OpenSearch
+        //  index in OpenSearch
         openSearchService.indexProduct(saved);
 
         return toResponse(saved, locale);
     }
 
-    // ✅ UPDATE PRODUCT
+    //  UPDATE PRODUCT
     @Transactional
     public ProductResponse update(@NonNull UUID id,
                                   @NonNull ProductRequest request,
@@ -112,7 +112,7 @@ public class ProductService {
         return toResponse(productRepository.save(product), locale);
     }
 
-    // ✅ UPLOAD IMAGE
+    // UPLOAD IMAGE
     @Transactional
     public ProductResponse uploadImage(@NonNull UUID id,
                                        @NonNull MultipartFile file,
@@ -121,19 +121,19 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
 
-        // ✅ delete old image if exists
+        // delete old image if exists
         if (product.getImageUrl() != null) {
             minioService.deleteImage(product.getImageUrl());
         }
 
-        // ✅ upload new image
+        // upload new image
         String imageUrl = minioService.uploadImage(file);
         product.setImageUrl(imageUrl);
 
         return toResponse(productRepository.save(product), locale);
     }
 
-    // ✅ DELETE PRODUCT
+    // DELETE PRODUCT
     @Transactional
     public void delete(@NonNull UUID id) {
         if (!productRepository.existsById(id)) {
@@ -142,11 +142,11 @@ public class ProductService {
 
         productRepository.deleteById(id);
 
-        // ✅ remove from search index
+        // remove from search index
         openSearchService.deleteProduct(id);
     }
 
-    // ✅ FUZZY SEARCH
+    //  FUZZY SEARCH
     @Transactional(readOnly = true)
     public List<ProductResponse> fuzzySearch(@NonNull String query,
                                              @NonNull String locale) {
@@ -161,7 +161,7 @@ public class ProductService {
                 .toList();
     }
 
-    // ✅ RESPONSE MAPPING + FALLBACK
+    //  RESPONSE MAPPING + FALLBACK
     private ProductResponse toResponse(@NonNull Product product,
                                        @NonNull String locale) {
 
