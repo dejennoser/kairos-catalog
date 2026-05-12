@@ -8,19 +8,19 @@ A production-style product catalog REST API built with modern Java and Spring Bo
 
 ## Tech stack
 
-| Technology | Purpose |
-|---|---|
-| Java 26 + Spring Boot 4 | Core framework |
-| PostgreSQL 16 | Primary database |
-| Flyway | Schema versioning |
+| Technology                  | Purpose |
+|-----------------------------|---|
+| Java 25 + Spring Boot 4     | Core framework |
+| PostgreSQL 16               | Primary database |
+| Flyway                      | Schema versioning |
 | Spring Data JPA + Hibernate | ORM |
-| Lombok + JSpecify | Boilerplate elimination + null safety |
-| OpenSearch | Fuzzy full-text search |
-| MinIO | Image storage (S3-compatible) |
-| Keycloak 23 | OAuth2 / JWT authentication |
-| Swagger / SpringDoc | API documentation |
-| Docker + Docker Compose | Containerized infrastructure |
-| Maven | Build tool |
+| Lombok + JSpecify           | Boilerplate elimination + null safety |
+| OpenSearch                  | Fuzzy full-text search |
+| MinIO                       | Image storage (S3-compatible) |
+| Keycloak 23                 | OAuth2 / JWT authentication |
+| Swagger / SpringDoc         | API documentation |
+| Docker + Docker Compose     | Containerized infrastructure |
+| Maven                       | Build tool |
 
 ---
 
