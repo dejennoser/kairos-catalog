@@ -1,7 +1,7 @@
 package com.kairos.catalog.config;
 
-import com.kairos.catalog.security.Roles;
 import com.kairos.catalog.security.KeycloakJwtConverter;
+import com.kairos.catalog.security.Roles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,6 +12,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -20,13 +22,19 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
+                //  ENABLE CORS (THIS CONNECTS CorsConfig)
+                .cors(withDefaults())
+
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
 
-                        // ✅ Public endpoints
+                        // ALLOW PREFLIGHT REQUESTS
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Public endpoints
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
@@ -34,11 +42,11 @@ public class SecurityConfig {
                                 "/actuator/health"
                         ).permitAll()
 
-                        // ✅ READ: USER or ADMIN
+                        // READ: USER or ADMIN
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**")
                         .hasAnyRole(Roles.USER, Roles.ADMIN)
 
-                        // ✅ WRITE: ADMIN only
+                        // WRITE: ADMIN only
                         .requestMatchers(HttpMethod.POST, "/api/v1/products/**")
                         .hasRole(Roles.ADMIN)
                         .requestMatchers(HttpMethod.PUT, "/api/v1/products/**")

@@ -1,6 +1,8 @@
 
 package com.kairos.catalog.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kairos.catalog.dto.ProductRequest;
 import com.kairos.catalog.dto.ProductResponse;
 import com.kairos.catalog.service.ProductService;
@@ -12,6 +14,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,6 +29,9 @@ import java.util.UUID;
 public class ProductController {
 
     private final ProductService productService;
+
+    private final ObjectMapper objectMapper;
+
 
     // GET ALL
     @GetMapping
@@ -110,6 +116,22 @@ public class ProductController {
 
         String locale = resolveLocale(headerLocale, systemLocale);
         return ResponseEntity.ok(productService.uploadImage(id, file, locale));
+    }
+
+    @PostMapping(
+            value = "/with-images",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ProductResponse createWithImages(
+            @RequestPart("product") String productJson,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @RequestHeader(name = "Accept-Language", defaultValue = "en") String locale
+    ) throws Exception {
+
+        ProductRequest product =
+                objectMapper.readValue(productJson, ProductRequest.class);
+
+        return productService.createWithImages(product, images, locale);
     }
 
     // UPDATE

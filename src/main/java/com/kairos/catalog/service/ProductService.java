@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +26,10 @@ public class ProductService {
     private final MinioService minioService;
     private final OpenSearchService openSearchService;
 
-    // GET ALL
+    // =========================
+    // READ OPERATIONS
+    // =========================
+
     @Transactional(readOnly = true)
     public List<ProductResponse> findAll(String locale) {
         return productRepository.findAll()
@@ -34,7 +38,6 @@ public class ProductService {
                 .toList();
     }
 
-    //  GET BY ID
     @Transactional(readOnly = true)
     public ProductResponse findById(@NonNull UUID id, @NonNull String locale) {
         return productRepository.findById(id)
@@ -42,7 +45,6 @@ public class ProductService {
                 .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
-    //  GET BY CATEGORY
     @Transactional(readOnly = true)
     public List<ProductResponse> findByCategory(@NonNull String category, @NonNull String locale) {
         return productRepository.findByCategory(category)
@@ -51,7 +53,6 @@ public class ProductService {
                 .toList();
     }
 
-    // SEARCH BY NAME
     @Transactional(readOnly = true)
     public List<ProductResponse> searchByName(@NonNull String name, @NonNull String locale) {
         return productRepository.findByNameContainingIgnoreCase(name)
@@ -60,46 +61,63 @@ public class ProductService {
                 .toList();
     }
 
-    // CREATE PRODUCT
+    // =========================
+    // CREATE (NO IMAGES)
+    // =========================
+
     @Transactional
     public ProductResponse create(@NonNull ProductRequest request, @NonNull String locale) {
 
-        Product product = Product.builder()
-                .name(request.getName())
-                .description(request.getDescription())
-                .price(request.getPrice())
-                .category(request.getCategory())
-                .stock(request.getStock())
-                .imageUrl(null)
-                .build();
+        Product product = buildProduct(request);
+        productRepository.save(product);
 
-        Product saved = productRepository.save(product);
+        saveTranslations(product, request);
+        openSearchService.indexProduct(product);
 
-        //  save translations
-        if (request.getTranslations() != null) {
-            request.getTranslations().forEach((lang, translation) -> {
-                ProductTranslation pt = ProductTranslation.builder()
-                        .product(saved)
-                        .locale(lang.toLowerCase()) //  normalize
-                        .name(translation.getName())
-                        .description(translation.getDescription())
-                        .build();
-                translationRepository.save(pt);
-            });
-        }
-
-        //  index in OpenSearch
-        openSearchService.indexProduct(saved);
-
-        return toResponse(saved, locale);
+        return toResponse(product, locale);
     }
 
-    //  UPDATE PRODUCT
-    @Transactional
-    public ProductResponse update(@NonNull UUID id,
-                                  @NonNull ProductRequest request,
-                                  @NonNull String locale) {
+    // =========================
+    // CREATE WITH IMAGES
+    // =========================
 
+    @Transactional
+    public ProductResponse createWithImages(
+            ProductRequest request,
+            List<MultipartFile> images,
+            String locale
+    ) {
+        Product product = buildProduct(request);
+        productRepository.save(product);
+
+        saveTranslations(product, request);
+
+        if (images != null && !images.isEmpty()) {
+            if (product.getImageUrls() == null) {
+                product.setImageUrls(new ArrayList<>());
+            }
+
+            for (MultipartFile file : images) {
+                String imageUrl = minioService.uploadImage(file);
+                product.getImageUrls().add(imageUrl);
+            }
+        }
+
+        openSearchService.indexProduct(product);
+
+        return toResponse(product, locale);
+    }
+
+    // =========================
+    // UPDATE PRODUCT (NO IMAGES)
+    // =========================
+
+    @Transactional
+    public ProductResponse update(
+            @NonNull UUID id,
+            @NonNull ProductRequest request,
+            @NonNull String locale
+    ) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
 
@@ -112,28 +130,33 @@ public class ProductService {
         return toResponse(productRepository.save(product), locale);
     }
 
-    // UPLOAD IMAGE
-    @Transactional
-    public ProductResponse uploadImage(@NonNull UUID id,
-                                       @NonNull MultipartFile file,
-                                       @NonNull String locale) {
+    // =========================
+    // REPLACE IMAGES (ADMIN)
+    // =========================
 
+    @Transactional
+    public ProductResponse uploadImage(
+            @NonNull UUID id,
+            @NonNull MultipartFile file,
+            @NonNull String locale
+    ) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
 
-        // delete old image if exists
-        if (product.getImageUrl() != null) {
-            minioService.deleteImage(product.getImageUrl());
-        }
+        // delete old images
+        product.getImageUrls().forEach(minioService::deleteImage);
+        product.getImageUrls().clear();
 
         // upload new image
-        String imageUrl = minioService.uploadImage(file);
-        product.setImageUrl(imageUrl);
+        product.getImageUrls().add(minioService.uploadImage(file));
 
         return toResponse(productRepository.save(product), locale);
     }
 
-    // DELETE PRODUCT
+    // =========================
+    // DELETE
+    // =========================
+
     @Transactional
     public void delete(@NonNull UUID id) {
         if (!productRepository.existsById(id)) {
@@ -141,15 +164,15 @@ public class ProductService {
         }
 
         productRepository.deleteById(id);
-
-        // remove from search index
         openSearchService.deleteProduct(id);
     }
 
-    //  FUZZY SEARCH
+    // =========================
+    // SEARCH
+    // =========================
+
     @Transactional(readOnly = true)
-    public List<ProductResponse> fuzzySearch(@NonNull String query,
-                                             @NonNull String locale) {
+    public List<ProductResponse> fuzzySearch(@NonNull String query, @NonNull String locale) {
 
         List<UUID> ids = openSearchService.fuzzySearch(query);
 
@@ -161,9 +184,35 @@ public class ProductService {
                 .toList();
     }
 
-    //  RESPONSE MAPPING + FALLBACK
-    private ProductResponse toResponse(@NonNull Product product,
-                                       @NonNull String locale) {
+    // =========================
+    // HELPERS
+    // =========================
+
+    private Product buildProduct(ProductRequest request) {
+        return Product.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .price(request.getPrice())
+                .category(request.getCategory())
+                .stock(request.getStock())
+                .build();
+    }
+
+    private void saveTranslations(Product product, ProductRequest request) {
+        if (request.getTranslations() != null) {
+            request.getTranslations().forEach((lang, translation) -> {
+                ProductTranslation pt = ProductTranslation.builder()
+                        .product(product)
+                        .locale(lang.toLowerCase())
+                        .name(translation.getName())
+                        .description(translation.getDescription())
+                        .build();
+                translationRepository.save(pt);
+            });
+        }
+    }
+
+    private ProductResponse toResponse(@NonNull Product product, @NonNull String locale) {
 
         ProductTranslation translation =
                 translationRepository.findByProductIdAndLocale(product.getId(), locale)
@@ -179,7 +228,7 @@ public class ProductService {
                 .price(product.getPrice())
                 .category(product.getCategory())
                 .stock(product.getStock())
-                .imageUrl(product.getImageUrl())
+                .imageUrls(product.getImageUrls())
                 .translatedName(translation != null ? translation.getName() : null)
                 .translatedDescription(translation != null ? translation.getDescription() : null)
                 .createdAt(product.getCreatedAt())

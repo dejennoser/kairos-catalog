@@ -6,6 +6,8 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -46,15 +48,20 @@ public class Product {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @Nullable
+
+    @ElementCollection
+    @CollectionTable(
+            name = "product_images",
+            joinColumns = @JoinColumn(name = "product_id")
+    )
     @Column(name = "image_url")
-    private String imageUrl;
+    private List<String> imageUrls = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<ProductTranslation> translations = new java.util.ArrayList<>();
 
     @PrePersist
-protected  void onCreate() {
+    protected  void onCreate() {
     createdAt = LocalDateTime.now();
     updatedAt = LocalDateTime.now();
     }

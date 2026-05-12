@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -34,7 +35,7 @@ public class ProductResponse {
     private Integer stock;
 
     @Nullable
-    private String imageUrl;
+    private List<String>imageUrls;
 
     @Nullable
     private String translatedName;
