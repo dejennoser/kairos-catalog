@@ -45,10 +45,13 @@ public class SecurityConfig {
                         // READ: USER or ADMIN
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**")
                         .hasAnyRole(Roles.USER, Roles.ADMIN)
-
+                        .requestMatchers(HttpMethod.GET, "/api/v2/products/**")
+                        .hasAnyRole("USER", "ADMIN")
                         // WRITE: ADMIN only
                         .requestMatchers(HttpMethod.POST, "/api/v1/products/**")
                         .hasRole(Roles.ADMIN)
+                        .requestMatchers(HttpMethod.POST, "/api/v2/products/**")
+                        .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/products/**")
                         .hasRole(Roles.ADMIN)
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/products/**")
