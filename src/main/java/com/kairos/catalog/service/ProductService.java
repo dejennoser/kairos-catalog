@@ -172,9 +172,13 @@ public class ProductService {
     // =========================
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> fuzzySearch(@NonNull String query, @NonNull String locale) {
-
-        List<UUID> ids = openSearchService.fuzzySearch(query);
+    public List<ProductResponse> search(
+            @NonNull String query,
+            int page,
+            int size,
+            @NonNull String locale
+    ) {
+        List<UUID> ids = openSearchService.search(query, page, size);
 
         return ids.stream()
                 .map(productRepository::findById)

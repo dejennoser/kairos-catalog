@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.fasterxml.jackson.databind.JsonMappingException.from;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -68,14 +70,21 @@ public class OpenSearchService {
         }
     }
 
-    public List<UUID> fuzzySearch(String query) {
+    public List<UUID> search(String query, int page, int size) {
+
         try {
-            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-            sourceBuilder.query(
-                    QueryBuilders.multiMatchQuery(query, "name", "description", "category")
-                            .fuzziness("AUTO")
-                            .type(MultiMatchQueryBuilder.Type.BEST_FIELDS)
-            );
+            // Build search query with modern bool_prefix
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
+                    .query(
+                            QueryBuilders.multiMatchQuery(query)
+                                    .type(MultiMatchQueryBuilder.Type.BOOL_PREFIX)
+                                    .field("name")
+                                    .field("description")
+                                    .field("category")
+                    )
+                    // Pagination
+                    .from(page * size)
+                    .size(size);
 
             SearchRequest searchRequest = new SearchRequest(index);
             searchRequest.source(sourceBuilder);
@@ -85,6 +94,7 @@ public class OpenSearchService {
             List<UUID> ids = new ArrayList<>();
             Arrays.stream(response.getHits().getHits())
                     .forEach(hit -> ids.add(UUID.fromString(hit.getId())));
+
             return ids;
 
         } catch (Exception e) {

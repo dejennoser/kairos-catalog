@@ -37,6 +37,43 @@ A production-style product catalog REST API built with modern Java and Spring Bo
 - Fully documented via Swagger UI
 
 ---
+---
+
+## Frontend (React SPA)
+
+The Kairos Catalog is complemented by a modern React Single Page Application.
+
+### Frontend repository
+https://github.com/dejennoser/kairos-catalog-frontend
+
+### Frontend tech stack
+
+| Technology | Purpose |
+|---|---|
+| React + Vite | SPA framework and dev server |
+| keycloak-js | OAuth2 / PKCE authentication |
+| Axios | HTTP client |
+| FormData API | Multipart uploads (JSON + images) |
+
+### Frontend features
+
+- Keycloak authentication using **public client + PKCE**
+- Role‑based UI (USER / ADMIN)
+- Product listing with localized content
+- ADMIN‑only product creation
+- Multipart product creation (JSON + images)
+- Image display directly from MinIO
+- Automatic product list refresh after creation
+
+### Architecture note
+
+Swagger is used for **API documentation only**.
+
+The frontend is the **real client** for multipart requests:
+- JSON + image uploads are sent using browser `FormData`
+- JWT tokens are refreshed automatically before protected requests
+- This mirrors real production SPA behavior
+  ``
 
 ## Getting started
 
@@ -183,9 +220,17 @@ Invoke-WebRequest -Method POST `
 | POST | `/api/v1/products` | Create product | ROLE_ADMIN |
 | PUT | `/api/v1/products/{id}` | Update product | ROLE_ADMIN |
 | DELETE | `/api/v1/products/{id}` | Delete product | ROLE_ADMIN |
-| POST | `/api/v1/products/{id}/image` | Upload image | ROLE_ADMIN |
+| POST | `/api/v1/products/with-images` | Create product with images (multipart) | ROLE_ADMIN |
 
 ---
+
+### SPA authentication model
+
+- Backend uses a **confidential Keycloak client**
+- Frontend uses a **public Keycloak client with PKCE**
+- JWT access tokens are refreshed in the browser before protected requests
+- This separation follows OAuth2 best practice
+
 
 ## Multilingual support
 
@@ -251,7 +296,7 @@ Products support translated `name` and `description` per locale via the `transla
 | Keycloak 24 user always "not fully set up" | Downgraded to Keycloak 23 |
 | JWT roles not mapped correctly | Custom `KeycloakJwtConverter` extracting `realm_access.roles` |
 | MinIO image URL returning wrong path | Fixed by constructing URL from `minio.url + bucket + filename` |
-
+| Product images are stored in MinIO and served via public object URLs.
 ---
 
 ## Author
