@@ -8,9 +8,8 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
-
   datasource:
-    url: jdbc:postgresql://localhost:5432/kairos
+    url: jdbc:postgresql://localhost:5433/kairos   # ✅ FIXED PORT
     username: kairos
     password: kairos
     driver-class-name: org.postgresql.Driver
@@ -47,9 +46,10 @@ springdoc:
 
 minio:
   url: http://localhost:9000
-  access-key: kairos
-  secret-key: kairos123
+  access-key: minio
+  secret-key: minio123
   bucket: kairos-products
+
 opensearch:
   host: localhost
   port: 9200

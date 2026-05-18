@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Value
 @Builder
-public class ListProductResponse {
+public class ListProductsResponse {
     UUID id;
     String name;
     String description;

@@ -14,11 +14,8 @@ public class ListProductsController {
 
     private final ListProductsHandler handler;
 
-@GetMapping
-    public List<ListProductResponse> list() {
-
-    return handler.handle();
-
- }
-
+    @GetMapping
+    public List<ListProductsResponse> list() {
+        return handler.handle();
+    }
 }

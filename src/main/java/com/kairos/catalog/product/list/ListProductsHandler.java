@@ -12,15 +12,15 @@ import java.util.List;
 public class ListProductsHandler {
     private final ProductRepository productRepository;
 
-    public List<ListProductResponse> handle() {
+    public List<ListProductsResponse> handle() {
         return productRepository.findAll()
                 .stream()
                 .map(this::map)
                 .toList();
     }
 
-    private ListProductResponse map(Product product) {
-        return ListProductResponse.builder()
+    private ListProductsResponse map(Product product) {
+        return ListProductsResponse.builder()
                 .id(product.getId())
                 .name(product.getName())
                 .description(product.getDescription())

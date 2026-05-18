@@ -14,9 +14,9 @@ public class CorsConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedOrigins(List.of("http://localhost:5173"));// frontend to call backend(localhost:8080)
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept-Language"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept-Language"));//Enable cross-origin request with Authorization headers
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
